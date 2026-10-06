@@ -1,0 +1,35 @@
+name: Build WorkMeter
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.3.1
+
+      - name: Unzip project
+        run: |
+          mkdir -p work
+          unzip -q WorkMeter.zip -d work
+          echo "PROJECT_DIR=$(dirname "$(find work -name settings.gradle.kts | head -n 1)")" >> "$GITHUB_ENV"
+
+      - name: Build debug APK
+        run: gradle -p "$PROJECT_DIR" assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WorkMeter-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
